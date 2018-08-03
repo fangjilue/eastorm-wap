@@ -27,7 +27,7 @@
 var cityStore=null;
 $.ajax({
 	type: "get",
-	url:'utils/cityList.action?callback=?',
+	url:'utils/cityList?callback=?',
 	async: false,
 	dataType: "jsonp",
 	success: function(data){

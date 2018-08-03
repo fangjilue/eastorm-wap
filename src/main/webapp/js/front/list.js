@@ -151,7 +151,7 @@ function showinputPanel(type){
 		
 		$.ajax({
 			type: 'POST',
-			url: getRootPath()+"/goutproject/read.action",
+			url: getRootPath()+"/goutproject/read",
 			dataType:"json",
 			data:$('#form1').serialize(),// 要提交的表单
 			success: function(data){
@@ -211,7 +211,7 @@ function showinputPanel(type){
 	function showDetail(id,startPointName,endPointName){
 		$.ajax({
 			type: 'GET',
-			url: getRootPath()+"/goutproject/detail.action?id="+id,
+			url: getRootPath()+"/goutproject/detail?id="+id,
 			dataType:"json",
 			success: function(data){
 				$('.ti_title').html('<span id=dStartName>'+startPointName+'</span><i class="tool'+data.goutproject.trafficTool+'"></i><span id=dEndName>'+endPointName+'</span>');
@@ -352,7 +352,7 @@ function showinputPanel(type){
 		}
 		$.ajax({
 			type: 'POST',
-			url:  getRootPath()+"/projectdialog/vt/insert.action",
+			url:  getRootPath()+"/projectdialog/vt/insert",
 			dataType:"json",
 			async:false,
 			data:{
@@ -377,7 +377,7 @@ function showinputPanel(type){
 		var goutid=$('#goutproductid').val();
 		$.ajax({
 			type: 'POST',
-			url:  getRootPath()+"/memberfocus/vt/insert.action",
+			url:  getRootPath()+"/memberfocus/vt/insert",
 			dataType:"json",
 			async:false,
 			data:{

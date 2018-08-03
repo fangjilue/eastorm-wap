@@ -1,6 +1,6 @@
 function logout(){
 	$.ajax({
-		url: getRootPath()+"/logout.action",
+		url: getRootPath()+"/logout",
 		dataType:"json",
 		success: function(data){
 			location.reload();
@@ -18,7 +18,7 @@ function autologin(){
 	if(!isStringNull(loginsign)&&!isStringNull(username)&&isStringNull(hasLogin)){
 		$.ajax({
 			type: 'POST',
-			url: getRootPath()+"/loginauto.action",
+			url: getRootPath()+"/loginauto",
 			data:{
 				"loginsign":loginsign,
 				"username":username
@@ -45,7 +45,7 @@ function showNextAddr(sid,e,showStyle,selected){
 	if(!isNull(e)){
 		$.ajax({
 			type: 'GET',
-			url: getRootPath()+"/sys/city/readAll.action",
+			url: getRootPath()+"/sys/city/readAll",
 			async:false,
 			data:{
 				"parentId":e.value
@@ -70,7 +70,7 @@ function showTrafficSite(sid,e,showStyle,tool,selected){
 	if(!isNull(e)&&!isStringNull(tool)){
 		$.ajax({
 			type: 'GET',
-			url: getRootPath()+"/sys/trafficSite/readAll.action",
+			url: getRootPath()+"/sys/trafficSite/readAll",
 			data:{
 				"areaId":e.value,
 				"tool":tool
@@ -99,7 +99,7 @@ function queryCitys(letter,selPutid){
 	if(!isStringNull(letter.value)&&isChinese(letter.value)){
 		$.ajax({
 			type: 'GET',
-			url: getRootPath()+"/sys/area/readAll.action?firstChar="+encodeURI(encodeURI(letter.value)),
+			url: getRootPath()+"/sys/area/readAll?firstChar="+encodeURI(encodeURI(letter.value)),
 			dataType:"json",
 			success: function(data){
 				var html='';
