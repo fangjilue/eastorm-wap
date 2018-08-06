@@ -16,7 +16,7 @@ var myCaptcha = _dx.Captcha(document.getElementById('c1'), {
     success: function (token) {
        $.ajax({
 			type: "get",
-			url:'loginController/login?token'+token,
+			url:'loginController/login?token='+token,
 			async: false,
 			dataType: "json",
 			success: function(resp){
