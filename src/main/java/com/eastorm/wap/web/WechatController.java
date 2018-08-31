@@ -5,8 +5,8 @@
  */
 package com.eastorm.wap.web;
 
-import com.eastorm.core.member.service.SysLoginService;
-import com.eastorm.core.member.service.SysMemberService;
+import com.eastorm.api.member.service.SysLoginService;
+import com.eastorm.api.member.service.SysMemberService;
 import com.eastorm.core.others.wechat.WechatService;
 import com.eastorm.core.others.wechat.WechatTools;
 import com.mangofactory.swagger.annotations.ApiIgnore;

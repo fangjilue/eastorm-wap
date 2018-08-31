@@ -5,8 +5,8 @@
  */
 package com.eastorm.wap.web;
 
-import com.eastorm.core.hedian.service.BizActCommentService;
-import com.eastorm.core.hedian.service.BizActivitysumService;
+import com.eastorm.api.hedian.service.BizActCommentService;
+import com.eastorm.api.hedian.service.BizActivitysumService;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;

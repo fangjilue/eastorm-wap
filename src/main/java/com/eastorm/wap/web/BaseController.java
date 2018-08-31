@@ -1,7 +1,7 @@
 package com.eastorm.wap.web;
 
+import com.eastorm.api.member.domain.SysMember;
 import com.eastorm.core.base.utils.Const;
-import com.eastorm.core.member.domain.SysMember;
 import org.springframework.web.context.ContextLoader;
 import org.springframework.web.context.WebApplicationContext;
 

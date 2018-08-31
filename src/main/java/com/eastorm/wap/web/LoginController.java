@@ -7,7 +7,7 @@ package com.eastorm.wap.web;
 
 import com.dingxianginc.ctu.client.CaptchaClient;
 import com.dingxianginc.ctu.client.model.CaptchaResponse;
-import com.eastorm.core.base.vo.RespResult;
+import com.eastorm.api.common.vo.RespResult;
 import com.wordnik.swagger.annotations.ApiImplicitParam;
 import com.wordnik.swagger.annotations.ApiImplicitParams;
 import com.wordnik.swagger.annotations.ApiOperation;
