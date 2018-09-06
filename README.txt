@@ -1,3 +1,1 @@
-wap统一接口项目
-1、H5接口
-2、本项目core单元测试在自己的包里
+http://localhost:8088/config-client/dev/spring-config
