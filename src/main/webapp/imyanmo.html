@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Insert title here</title>
+    <script type="text/javascript" src="js/jquery-1.7.1.min.js"></script>
+    <script type='text/javascript' src='js/webim.config.js'></script>
+    <script type='text/javascript' src='js/strophe-1.2.8.js'></script>
+    <script type='text/javascript' src='js/websdk-1.4.13.js'></script>
+</head>
+<body>
+
+<input type="button" onclick="login()" value="登录"/>
+
+消息：<input type="text" id="msg"/><input type="button" id="privateCmd" value="发送消息"/>
+<div id="content" style="with:400px;height:1200px;display:block"></div>
+
+
+<script type="text/javascript">
+    var conn = new WebIM.connection({
+        isMultiLoginSessions: WebIM.config.isMultiLoginSessions,
+        https: typeof WebIM.config.https === 'boolean' ? WebIM.config.https : location.protocol === 'https:',
+        url: WebIM.config.xmppURL,
+        heartBeatWait: WebIM.config.heartBeatWait,
+        autoReconnectNumMax: WebIM.config.autoReconnectNumMax,
+        autoReconnectInterval: WebIM.config.autoReconnectInterval,
+        apiUrl: WebIM.config.apiURL,
+        isAutoLogin: true
+    });
+
+    conn.listen({
+       onOpened: function (message) {          //连接成功回调，连接成功后才可以发送消息
+            //如果isAutoLogin设置为false，那么必须手动设置上线，否则无法收消息
+            // 手动上线指的是调用conn.setPresence(); 在本例中，conn初始化时已将isAutoLogin设置为true
+            // 所以无需调用conn.setPresence();
+            console.log("%c [opened] 连接已成功建立", "color: green")
+        },
+        onTextMessage: function (message) {
+            // 在此接收和处理消息，根据message.type区分消息来源，私聊或群组或聊天室
+            console.log(message);
+            console.log(message.type);
+            console.log('Text');
+
+            $('#content').html($('#content').html()+'<br/>'+message.data)
+        }  //收到文本消息
+    });
+
+    function login(){
+        var options = {
+          apiUrl: WebIM.config.apiURL,
+          user: 'yanmo',
+          pwd: '123456',
+          appKey: WebIM.config.appkey
+        };
+        conn.open(options);
+    }
+
+    // 私聊发送命令消息
+    var sendPrivateText = function () {
+        var id = conn.getUniqueId();
+        var msg = new WebIM.message('txt', id);
+        msg.set({
+            msg:  document.getElementById('msg').value,                       // 消息内容
+            to: 'pengkun',                          // 接收消息对象
+            roomType: false,
+            success: function (id, serverMsgId) {
+                console.log("send private text Success");
+            },
+            fail:function(a){
+                console.log(a)
+            }
+        });
+        msg.body.chatType = 'singleChat';
+        conn.send(msg.body);
+    };
+
+    window.onload = function () {
+        document.getElementById('privateCmd').onclick = sendPrivateText;
+    };
+</script>
+</body>
+</html>
