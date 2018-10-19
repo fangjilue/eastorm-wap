@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Insert title here</title>
+    <script type="text/javascript" src="js/jquery-1.7.1.min.js"></script>
+    <script type="text/javascript" src="js/json2.js"></script>
+</head>
+<body>
+
+<form onsubmit="return false;">
+    设置当前用户id:<input type="text" name="curUserId" id="curUserId"/>
+    <input type="button" value="设置当前用户" onclick="send('0',this.form.curUserId.value,1)"/>
+    <br/><br/>
+    发消息<input type="text" name="message" id="message"/>
+    给用户id<input type="text" name="toUserId"/>
+    <input type="button" value="发送webSocket请求消息" onclick="send(this.form.toUserId.value,this.form.message.value,2)"/>
+
+    <hr color="blue"/>
+    <h3>服务端返回的应答消息</h3>
+    <textarea id="responseText" style="width:500px;height:300px"></textarea>
+</form>
+
+
+<script type="text/javascript">
+   var socket;
+   if(!window.WebSocket){
+        window.WebSocket = window.MozWebSocket;
+   }
+
+   if(window.WebSocket){
+        socket = new WebSocket("ws://localhost:49881/websocket");
+        socket.onmessage = function(event){
+            var ta = document.getElementById('responseText');
+
+            if(event.data=='pong'||event.data=='ack'){
+                console.log(event.data);
+                return;
+            }
+
+            var resp=JSON.parse(event.data);
+
+            ta.value = ta.value+ resp.sender.userName+" 发送 "+ resp.content+"\t"+resp.sendTime+"\n";
+
+            //ack
+            var wsMsg={};
+            wsMsg.content="ack";
+            wsMsg.type=7;
+            wsMsg.platform=1;//h5
+            wsMsg.msgId=resp.msgId;
+
+            var txt=JSON.stringify(wsMsg);
+            socket.send(txt);
+        };
+
+        socket.onopen = function(event){
+            var ta = document.getElementById('responseText');
+            ta.value= "打开WebSocket服务正常，浏览器支持WebSocket！";
+
+            heartBeat();
+        }
+
+        socket.onclose = function(event){
+             var ta = document.getElementById('responseText');
+            ta.value= "WebSocket关闭！";
+        }
+   }else{
+        alert("抱歉，您的浏览器不支持WebSocket协议！");
+   }
+
+   function send(toUserId,message,type){
+        if(!window.WebSocket){return;}
+
+        if(socket.readyState == WebSocket.OPEN){
+            var curUserId = document.getElementById('curUserId').value;
+
+            var wsMsg={};
+            wsMsg.content=message;
+            wsMsg.type=type;
+            wsMsg.platform=1;//h5
+
+            wsMsg.sender={};
+            wsMsg.sender.userId=curUserId;
+            wsMsg.sender.userName=curUserId;
+
+            wsMsg.receiver={};
+            wsMsg.receiver.userId=toUserId;
+            wsMsg.receiver.userName=toUserId;
+
+            var txt=JSON.stringify(wsMsg);
+            socket.send(txt);
+
+            var ta = document.getElementById('responseText');
+            ta.value = ta.value+ wsMsg.sender.userName+" 发送 "+ wsMsg.content+"\t"+"\n";
+        }else{
+            alert("WebSocket还没建立");
+        }
+   }
+
+   function heartBeat(){
+       var interval =  setInterval(function(){
+                if(socket.readyState==1){
+
+                    var wsMsg={};
+                    wsMsg.type=0;//心跳
+                    wsMsg.platform=1;//h5
+                    wsMsg.sender={};
+
+                    var curUserId = document.getElementById('curUserId').value;
+                    wsMsg.sender.userId=curUserId;
+
+                    var txt=JSON.stringify(wsMsg);
+                    socket.send(txt);
+                }else{
+                    clearInterval(interval);
+                    alert('服务器已停止');
+                }
+        }, 1000);
+   }
+</script>
+</body>
+</html>
