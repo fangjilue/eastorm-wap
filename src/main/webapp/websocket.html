@@ -9,24 +9,51 @@
 <body>
 
 <form onsubmit="return false;">
-    <input type="button" value="1、建立连接" onclick="createConn()"/>
-    设置当前用户id:<input type="text" name="curUserId" id="curUserId"/>
+    服务器地址：<input type="text" name="addr" id="addr" value="ws://192.168.21.105:49880/websocket" size="40"/>
+    <input type="button" value="1、建立连接" onclick="createConn()"/><br/><br/>
+    设置当前用户id：<input type="text" name="curUserId" id="curUserId" onkeyup="value=value.replace(/[^\d]/g,'')"/><br/>
     设置平台：<select id="platform" name="platform" >
-    <option value="1" selected>h5</option>
-    <option value="2">支付宝服务窗</option>
-    <option value="3">微信小程序</option>
-</select>
-    <input type="button" value="2、登录" onclick="send('0','请求登录',1);"/>
+                <option value="1" selected>h5</option>
+                <option value="2">支付宝服务窗</option>
+                <option value="3">微信小程序</option>
+            </select><br/>
+    当前用户类型：<select id="sUserType" name="sUserType" >
+                <option value="1" selected>租客</option>
+                <option value="2">房东</option>
+                <option value="3">经纪人</option>
+                <option value="4">业主</option>
+            </select>
+    <br/>设置当前用户token：<input type="text" name="loginToken" id="loginToken"/>
+    <input type="button" value="2.1、获取token" onclick="getToken();"/>
+    <input type="button" value="2.2、登录" onclick="send('0','请求登录',1);"/>
     <input type="button" value="4、下线" onclick="send('0','下线',6)"/>
     <br/><br/>
-    发消息<input type="text" name="message" id="message"/>
+    发<select id="type" name="type" >
+            <option value="2" selected>文本</option>
+            <option value="3">图片</option>
+            <option value="4">视频</option>
+            <option value="5">地理位置</option>
+        </select>
+    消息<input type="text" name="message" id="message"/>
     给用户id<input type="text" name="toUserId"/>
-    <input type="button" value="3、发送webSocket请求消息" onclick="send(this.form.toUserId.value,this.form.message.value,2)"/>
+    接收用户类型：<select id="rUserType" name="rUserType" >
+        <option value="1" selected>租客</option>
+        <option value="2">房东</option>
+        <option value="3">经纪人</option>
+        <option value="4">业主</option>
+    </select>
+    <input type="button" value="3、发送webSocket请求消息" onclick="send(this.form.toUserId.value,this.form.message.value,this.form.type.value)"/>
 
     <hr color="blue"/>
     <h3>服务端返回的应答消息</h3>
-    <textarea id="responseText" style="width:500px;height:300px"></textarea>
+    <ul id="context">
+
+    </ul>
 </form>
+
+<style>
+    .ack{background-color:green;color:#fff}
+</style>
 
 
 <script type="text/javascript">
@@ -42,11 +69,11 @@
    var pongLastTime=0;
    //是否主动下线
    var isLoginOut=false;
-   var addr="ws://192.168.21.105:49881/websocket";
-
+   //重连当前次数
+   var reCurCount=0;
 
    function createConn(){
-        reCount=0;
+        reCurCount=0;
         connect();
    }
 
@@ -63,6 +90,12 @@
        }
 
        if(window.WebSocket){
+            if(socket!=null){
+                socket.close();
+                console.log('socket.close');
+            }
+
+            var addr=document.getElementById('addr').value;
             socket = new WebSocket(addr);
 
             socket.onopen = function(event){
@@ -73,6 +106,7 @@
                 online=2;
                 pongLastTime=0;
                 isLoginOut=false;
+                reCurCount=0;
                 heartBeat();
             }
 
@@ -81,23 +115,33 @@
                 if(event.data=='pong'){
                     pongLastTime=new Date().getTime();
                 }
-                if(event.data=='pong'||event.data.indexOf('ack')>=0){
-                    console.log(event.data);
-                    return;
+                if(event.data.indexOf('ack')>=0){
+                    var msgId=event.data.split(":")[1];
+
+                    $('#'+msgId).attr('class','ack');
                 }
 
+                if(event.data=='pong'||event.data.indexOf('ack')>=0){
+                    //console.log(event.data);
+                    return;
+                }
                 var resp=JSON.parse(event.data);
 
-                appendTxt(resp.sender.userName+" 发送 "+ resp.content+"\t"+resp.sendTime+"\n");
+                console.log(event.data);
+                if(resp.type==3){
+                      appendPic(resp.content,resp.msgId);
+                }else{
+                      appendTxt(resp.content+"\t"+resp.sendTime);
+                }
 
                 //ack
                 var wsMsg={};
-                wsMsg.content="ack";
                 wsMsg.type=7;
-                wsMsg.platform=document.getElementById('platform').value;
-                wsMsg.msgId=resp.msgId;
+                wsMsg.id=resp.id;
+                wsMsg.senderToken=document.getElementById('loginToken').value;
 
                 var txt=JSON.stringify(wsMsg);
+                console.log(txt);
                 socket.send(txt);
             };
 
@@ -107,7 +151,7 @@
                 appendTxt('WebSocket关闭！');
 
                 //判断如果不是主动关闭则重试
-                if(!isLoginOut&&reCount==0){
+                if(!isLoginOut&&reCurCount==0){
                     reConnect();
                 }
             }
@@ -128,19 +172,16 @@
             wsMsg.content=message;
             wsMsg.type=type;
             wsMsg.platform=document.getElementById('platform').value;
-
-            wsMsg.sender={};
-            wsMsg.sender.userId=curUserId;
-            wsMsg.sender.userName=curUserId;
+            wsMsg.senderToken=document.getElementById('loginToken').value;
 
             wsMsg.receiver={};
             wsMsg.receiver.userId=toUserId;
-            wsMsg.receiver.userName=toUserId;
+            wsMsg.receiver.type=document.getElementById('rUserType').value;
 
             var txt=JSON.stringify(wsMsg);
             socket.send(txt);
 
-            appendTxt(wsMsg.sender.userName+" 发送 "+ wsMsg.content+"\t");
+            appendTxt(document.getElementById('sUserType').value+":"+document.getElementById('curUserId').value+" 发送 "+ wsMsg.content,wsMsg.msgId);
 
             if(type==6){
                 isLoginOut=true;
@@ -163,15 +204,17 @@
                     var wsMsg={};
                     wsMsg.type=0;//心跳
                     wsMsg.platform=document.getElementById('platform').value;
-                    wsMsg.sender={};
+                    wsMsg.senderToken=document.getElementById('loginToken').value;
                     wsMsg.msgId=guid();
 
                     var curUserId = document.getElementById('curUserId').value;
-                    wsMsg.sender.userId=curUserId;
 
                     var txt=JSON.stringify(wsMsg);
                     socket.send(txt);
+
+                    console.log('send ping time:'+new Date().getTime());
                 }else{
+                    console.log("clearInterval-heartInterval");
                     clearInterval(heartInterval);
                 }
         }, 1000);
@@ -180,10 +223,10 @@
         checkPonginterval =  setInterval(function(){
                 if(socket.readyState == WebSocket.OPEN){
 
-                    if(pongLastTime>0&&new Date().getTime()-pongLastTime>3*1000){
+                    if(pongLastTime>0&&new Date().getTime()-pongLastTime>5*1000){
                         online=0;
-                        //3m没收到pong，停止心跳检测
-                        appendTxt("检测到WebSocket断开大于3秒，重试连接");
+                        //5m没收到pong，停止心跳检测
+                        appendTxt("检测到WebSocket断开大于5秒，重试连接");
                         reConnect();
                     }else{
                         console.log('check pong time:'+pongLastTime);
@@ -195,13 +238,7 @@
         }, 1000);
    }
 
-   function appendTxt(txt){
-        var ta = document.getElementById('responseText');
-        ta.value = ta.value + txt+"\n";
-   }
-
    //重连接，如果是异常关闭，则开启重连接前先关闭心跳和pong检测
-   var reCount=0;
    function reConnect(){
         if(heartInterval!=null){
             clearInterval(heartInterval);
@@ -210,25 +247,56 @@
             clearInterval(checkPonginterval);
         }
 
-        if(reCount==0){
+        if(reCurCount==0){
              var reConnInterval =  setInterval(function(){
                     if(socket.readyState == WebSocket.OPEN && online==2){
-                        send('0','请求登录',1);
+
+                        var curUserId = document.getElementById('curUserId').value;
+                        if(curUserId!=null&&curUserId!=''){
+                            send('0','请求登录',1);
+                        }
+
                         clearInterval(reConnInterval);
                         return;
                     }
 
-                   if(reCount>=30){
+                   if(reCurCount>=30){
                        clearInterval(reConnInterval);
                    }else{
-                       reCount++;
+                       reCurCount++;
                        connect();
-                       appendTxt('重新连接第'+reCount+'次');
+                       appendTxt('重新连接第'+reCurCount+'次');
                    }
             }, 1000);
         }
    }
 
+
+   function getToken(){
+        var userId=document.getElementById('curUserId').value;
+		var userType=document.getElementById('sUserType').value;
+		var platformType=document.getElementById('platform').value;
+		var url="http://192.168.21.105:31088/mrkt-web/im/enToken?userId="+userId+"&userType="+userType+"&platformType="+platformType;
+
+		window.open(url);
+   }
+
+
+   function appendTxt(txt,id){
+        if(id!=null){
+            $('#context').append("<li id='"+id+"'>"+txt+"</li>");
+        }else{
+            $('#context').append("<li>"+txt+"</li>");
+        }
+   }
+
+   function appendPic(txt,id){
+        if(id!=null){
+            $('#context').append("<li id='"+id+"'><img src='"+txt+"'/></li>");
+        }else{
+            $('#context').append("<li><img src='"+txt+"'/></li>");
+        }
+   }
 
    function S4() {
         return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
