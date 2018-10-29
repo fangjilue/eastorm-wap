@@ -35,7 +35,7 @@
             <option value="5">地理位置</option>
         </select>
     消息<input type="text" name="message" id="message"/>
-    给用户id<input type="text" name="toUserId"/>
+    给用户id<input type="text" name="toUserId" id="toUserId"/>
     接收用户类型：<select id="rUserType" name="rUserType" >
         <option value="1" selected>租客</option>
         <option value="2">房东</option>
@@ -107,7 +107,9 @@
                 pongLastTime=0;
                 isLoginOut=false;
                 reCurCount=0;
+
                 heartBeat();
+                reSend();
             }
 
             socket.onmessage = function(event){
@@ -118,11 +120,12 @@
                 if(event.data.indexOf('ack')>=0){
                     var msgId=event.data.split(":")[1];
 
+                    $('#'+msgId).removeClass('needAck');
                     $('#'+msgId).attr('class','ack');
                 }
 
                 if(event.data=='pong'||event.data.indexOf('ack')>=0){
-                    //console.log(event.data);
+                    console.log(event.data);
                     return;
                 }
                 var resp=JSON.parse(event.data);
@@ -141,7 +144,6 @@
                 wsMsg.senderToken=document.getElementById('loginToken').value;
 
                 var txt=JSON.stringify(wsMsg);
-                console.log(txt);
                 socket.send(txt);
             };
 
@@ -161,19 +163,20 @@
        }
    }
 
-   function send(toUserId,message,type){
+   function send(toUserId,message,type,msgId){
         if(!socket){return;}
 
         if(socket.readyState == WebSocket.OPEN && online==2){
             var curUserId = document.getElementById('curUserId').value;
 
             var wsMsg={};
-            wsMsg.msgId=guid();
+            wsMsg.msgId=msgId==null?guid():msgId;
             wsMsg.content=message;
             wsMsg.type=type;
+
+            //固定的
             wsMsg.platform=document.getElementById('platform').value;
             wsMsg.senderToken=document.getElementById('loginToken').value;
-
             wsMsg.receiver={};
             wsMsg.receiver.userId=toUserId;
             wsMsg.receiver.type=document.getElementById('rUserType').value;
@@ -181,7 +184,8 @@
             var txt=JSON.stringify(wsMsg);
             socket.send(txt);
 
-            appendTxt(document.getElementById('sUserType').value+":"+document.getElementById('curUserId').value+" 发送 "+ wsMsg.content,wsMsg.msgId);
+            var user=document.getElementById('sUserType').value+":"+document.getElementById('curUserId').value;
+            appendTxt(wsMsg.content,user,wsMsg.msgId,wsMsg.type);
 
             if(type==6){
                 isLoginOut=true;
@@ -212,7 +216,7 @@
                     var txt=JSON.stringify(wsMsg);
                     socket.send(txt);
 
-                    console.log('send ping time:'+new Date().getTime());
+                    //console.log('send ping time:'+new Date().getTime());
                 }else{
                     console.log("clearInterval-heartInterval");
                     clearInterval(heartInterval);
@@ -229,7 +233,7 @@
                         appendTxt("检测到WebSocket断开大于5秒，重试连接");
                         reConnect();
                     }else{
-                        console.log('check pong time:'+pongLastTime);
+                        //console.log('check pong time:'+pongLastTime);
                     }
                 }else{
                     pongLastTime=0;
@@ -271,6 +275,37 @@
         }
    }
 
+    //重发，遍历消息列表，发现没有ack的文本类型消息，且stime超过5秒，开始重试3次，每次2秒
+   function reSend(){
+         var reSendInterval =  setInterval(function(){
+            if(socket.readyState == WebSocket.OPEN && online==2){
+                $('#context .needAck').each(function(i,e){
+                    var stime=$(e).attr('stime');
+                    var message=$(e).attr('msg');
+                    var type=$(e).attr('msgtype');
+                    var recount=$(e).attr('recount');
+
+                    if(recount==null){
+                        recount=1;
+                    }
+                    if(recount>3){
+                        $(e).removeClass('needAck');
+                        return;
+                    }
+
+                    var toUserId=document.getElementById('toUserId').value;
+
+                    if(stime!=null){
+                        if(new Date().getTime()-stime>5000){
+                            console.log(e)
+                            send(toUserId,message,type,e.id);
+                            $(e).attr('recount',++recount);
+                        }
+                    }
+                });
+            }
+        }, 2000);
+   }
 
    function getToken(){
         var userId=document.getElementById('curUserId').value;
@@ -281,12 +316,23 @@
 		window.open(url);
    }
 
-
-   function appendTxt(txt,id){
+   //wsMsg.content,user,wsMsg.msgId,wsMsg.type
+   function appendTxt(msg,user,id,type){
         if(id!=null){
-            $('#context').append("<li id='"+id+"'>"+txt+"</li>");
+            //排重
+            if($('#context #'+id).length>0){
+                return;
+            }
+
+            var needAck='';
+            if(type==2){
+                needAck="class='needAck'";
+            }
+            var listr="<li id='"+id+"' stime='"+new Date().getTime()+"' msgType='"+type+"' msg='"+msg+"' "+needAck+">"+user+" 发送 "+msg+"</li>"
+
+            $('#context').append(listr);
         }else{
-            $('#context').append("<li>"+txt+"</li>");
+            $('#context').append("<li>"+msg+"</li>");
         }
    }
 
