@@ -9,7 +9,7 @@
 <body>
 
 <form onsubmit="return false;">
-    服务器地址：<input type="text" name="addr" id="addr" value="ws://192.168.21.105:49880/websocket" size="40"/>
+    服务器地址：<input type="text" name="addr" id="addr" value="ws://192.168.21.105:32188/websocket" size="40"/>
     <input type="button" value="1、建立连接" onclick="createConn()"/><br/><br/>
     设置当前用户id：<input type="text" name="curUserId" id="curUserId" onkeyup="value=value.replace(/[^\d]/g,'')"/><br/>
     设置平台：<select id="platform" name="platform" >
@@ -311,7 +311,7 @@
         var userId=document.getElementById('curUserId').value;
 		var userType=document.getElementById('sUserType').value;
 		var platformType=document.getElementById('platform').value;
-		var url="http://192.168.21.105:31088/mrkt-web/im/enToken?userId="+userId+"&userType="+userType+"&platformType="+platformType;
+		var url="http://192.168.21.105:32088/qmt-pyramid/im/enToken?userId="+userId+"&userType="+userType+"&platformType="+platformType;
 
 		window.open(url);
    }
